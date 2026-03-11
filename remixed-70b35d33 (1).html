@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patient Journey Insights | Kite Pharma × Axtria</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F0F4F9; --surface: #FFFFFF; --card: #FFFFFF; --card2: #F5F8FC;
+    --border: #D8E3EE; --blue: #1A6FD4; --cyan: #0099A8; --purple: #6D3FC9;
+    --amber: #C07B00; --green: #0B8A5C; --red: #C93535; --orange: #C05C0A;
+    --white: #1A2840; --muted: #5A7290; --dim: #97AEC4;
+    --font: 'DM Sans', sans-serif; --mono: 'DM Mono', monospace;
+    --display: 'Playfair Display', serif;
+    --shadow: 0 1px 4px rgba(26,40,64,0.08), 0 4px 16px rgba(26,40,64,0.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; background:var(--bg); color:var(--white); font-family:var(--font); font-size:13px; overflow-x:hidden; }
+  ::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-track { background:var(--bg); } ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  /* HEADER */
+  .header { display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:56px; background:var(--surface); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; box-shadow:0 1px 6px rgba(26,40,64,0.07); }
+  .header-left { display:flex; align-items:center; gap:16px; }
+  .logo-axtria { display:flex; align-items:center; gap:8px; font-size:17px; font-weight:700; letter-spacing:-0.5px; color:var(--white); }
+  .logo-axtria .a-mark { width:30px; height:30px; background:linear-gradient(135deg,#1A6FD4,#6D3FC9); border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:800; color:#fff; font-style:italic; }
+  .logo-divider { width:1px; height:28px; background:var(--border); }
+  .logo-kite { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:var(--muted); }
+  .logo-kite .k-mark { width:26px; height:26px; background:linear-gradient(135deg,#0B8A5C,#1A6FD4); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:#fff; }
+  .header-center { font-size:14px; font-weight:600; color:var(--white); letter-spacing:0.2px; }
+  .header-right { display:flex; align-items:center; gap:10px; }
+  .persona-toggle { display:flex; background:var(--bg); border-radius:8px; padding:3px; gap:2px; border:1px solid var(--border); }
+  .persona-btn { padding:5px 14px; border-radius:6px; border:none; cursor:pointer; font-family:var(--font); font-size:12px; font-weight:600; transition:all 0.2s; color:var(--muted); background:transparent; }
+  .persona-btn.active { background:var(--blue); color:#fff; box-shadow:0 2px 6px rgba(26,111,212,0.25); }
+  .refresh-badge { font-size:10px; color:var(--muted); font-family:var(--mono); background:var(--bg); padding:4px 8px; border-radius:5px; border:1px solid var(--border); }
+  .refresh-badge .dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--green); margin-right:5px; animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .user-chip { display:flex; align-items:center; gap:7px; background:var(--bg); border:1px solid var(--border); padding:4px 10px; border-radius:20px; font-size:12px; }
+  .user-avatar { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; }
+  .avatar-exec { background:linear-gradient(135deg,#1A6FD4,#6D3FC9); color:#fff; }
+  .avatar-hq   { background:linear-gradient(135deg,#0099A8,#0B8A5C); color:#fff; }
+
+  /* ACTION BAR */
+  .action-bar { display:flex; align-items:center; justify-content:space-between; padding:8px 20px; background:var(--surface); border-bottom:1px solid var(--border); }
+  .filters { display:flex; gap:8px; flex-wrap:wrap; }
+  .filter-group { display:flex; flex-direction:column; gap:3px; }
+  .filter-label { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+  .filter-select { background:var(--bg); border:1px solid var(--border); color:var(--white); padding:5px 10px; border-radius:6px; font-family:var(--font); font-size:11px; cursor:pointer; outline:none; min-width:100px; }
+  .filter-select:focus { border-color:var(--blue); }
+  .action-btns { display:flex; gap:8px; }
+  .btn { padding:6px 14px; border-radius:7px; border:none; cursor:pointer; font-family:var(--font); font-size:11px; font-weight:600; transition:all 0.2s; display:flex; align-items:center; gap:5px; }
+  .btn-primary { background:var(--blue); color:#fff; box-shadow:0 2px 6px rgba(26,111,212,0.2); }
+  .btn-primary:hover { background:#1460BB; }
+  .btn-ghost { background:var(--bg); color:var(--muted); border:1px solid var(--border); }
+  .btn-ghost:hover { border-color:var(--blue); color:var(--blue); }
+  .btn-alert { background:rgba(201,53,53,0.08); color:var(--red); border:1px solid rgba(201,53,53,0.25); }
+  .btn-share { background:rgba(11,138,92,0.08); color:var(--green); border:1px solid rgba(11,138,92,0.25); }
+
+  /* LAYOUT */
+  .dashboard { display:none; padding:16px 20px; gap:14px; flex-direction:column; }
+  .dashboard.active { display:flex; }
+  .kpi-row { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; }
+  .kpi-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px 14px; position:relative; overflow:hidden; transition:border-color 0.2s,box-shadow 0.2s; box-shadow:var(--shadow); }
+  .kpi-card:hover { border-color:var(--blue); box-shadow:0 4px 20px rgba(26,111,212,0.12); }
+  .kpi-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--accent-color,var(--blue)); }
+  .kpi-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px; }
+  .kpi-value { font-size:22px; font-weight:700; line-height:1; margin-bottom:4px; }
+  .kpi-delta { font-size:10px; display:flex; align-items:center; gap:3px; }
+  .delta-up { color:var(--green); } .delta-down { color:var(--red); } .delta-neu { color:var(--amber); }
+  .main-grid { display:grid; grid-template-columns:1fr 1fr 360px; gap:14px; }
+  .col-left { display:flex; flex-direction:column; gap:14px; }
+  .col-right { display:flex; flex-direction:column; gap:14px; }
+  .panel { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+  .panel-head { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--border); background:#FAFCFF; }
+  .panel-title { font-size:12px; font-weight:600; color:var(--white); display:flex; align-items:center; gap:8px; }
+  .panel-tag { font-size:9px; font-weight:600; padding:2px 7px; border-radius:10px; text-transform:uppercase; letter-spacing:0.8px; }
+  .tag-live { background:rgba(11,138,92,0.12); color:var(--green); }
+  .tag-pred { background:rgba(109,63,201,0.12); color:var(--purple); }
+  .panel-body { padding:14px 16px; }
+  .funnel-wrap { display:flex; flex-direction:column; gap:6px; }
+  .funnel-stage { display:flex; align-items:center; gap:10px; }
+  .funnel-bar-wrap { flex:1; }
+  .funnel-label { width:140px; font-size:11px; color:var(--muted); }
+  .funnel-bar { height:32px; border-radius:6px; display:flex; align-items:center; padding:0 12px; font-size:12px; font-weight:700; color:#fff; transition:width 0.6s ease; min-width:60px; }
+  .funnel-count { font-size:11px; color:var(--muted); width:50px; text-align:right; }
+  .funnel-arrow { color:var(--dim); font-size:14px; margin:2px 0; padding-left:150px; }
+  .tat-wrap { display:flex; flex-direction:column; gap:12px; }
+  .tat-row { display:flex; flex-direction:column; gap:5px; }
+  .tat-meta { display:flex; justify-content:space-between; align-items:center; }
+  .tat-stage { font-size:11px; color:var(--muted); }
+  .tat-value { font-size:12px; font-weight:700; }
+  .tat-bar-bg { height:8px; background:var(--border); border-radius:4px; }
+  .tat-bar-fill { height:8px; border-radius:4px; }
+  .tat-target { font-size:9px; color:var(--dim); margin-top:2px; }
+  .grid-table { width:100%; border-collapse:collapse; font-size:11px; }
+  .grid-table th { padding:6px 10px; text-align:left; color:var(--muted); font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border); background:#FAFCFF; }
+  .grid-table td { padding:7px 10px; border-bottom:1px solid rgba(216,227,238,0.7); }
+  .grid-table tr:hover td { background:rgba(26,111,212,0.04); }
+  .heat-cell { display:inline-block; padding:2px 8px; border-radius:4px; font-weight:600; font-size:10px; }
+  .insights-panel { display:flex; flex-direction:column; }
+  .insight-tabs { display:flex; border-bottom:1px solid var(--border); background:#FAFCFF; }
+  .insight-tab { padding:10px 14px; font-size:11px; font-weight:600; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; transition:all 0.2s; }
+  .insight-tab.active { color:var(--purple); border-bottom-color:var(--purple); }
+  .insight-content { padding:14px; display:none; }
+  .insight-content.active { display:block; }
+  .insight-card { background:var(--card2); border-radius:8px; padding:12px; margin-bottom:10px; border:1px solid var(--border); border-left:3px solid var(--purple); }
+  .insight-card.amber { border-left-color:var(--amber); }
+  .insight-card.green { border-left-color:var(--green); }
+  .insight-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .insight-icon { font-size:14px; }
+  .insight-title { font-size:11px; font-weight:700; color:var(--white); }
+  .insight-body { font-size:10.5px; color:var(--muted); line-height:1.6; }
+  .insight-metric { display:inline-block; margin-top:6px; font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; }
+  .metric-up { background:rgba(11,138,92,0.1); color:var(--green); }
+  .metric-down { background:rgba(201,53,53,0.1); color:var(--red); }
+  .metric-warn { background:rgba(192,123,0,0.1); color:var(--amber); }
+  .value-section { margin-top:6px; }
+  .value-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--cyan); margin-bottom:8px; }
+  .value-row { display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--border); }
+  .value-kpi { font-size:10.5px; color:var(--muted); }
+  .value-change { font-size:12px; font-weight:700; color:var(--green); }
+  .badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:600; }
+  .badge-blue { background:rgba(26,111,212,0.1); color:var(--blue); }
+  .badge-green { background:rgba(11,138,92,0.1); color:var(--green); }
+  .canvas-wrap { position:relative; }
+
+  /* ── CHAT ── */
+  .chat-overlay { display:none; position:fixed; inset:0; z-index:200; background:rgba(240,244,249,0.85); backdrop-filter:blur(6px); align-items:flex-end; justify-content:flex-end; padding:20px; }
+  .chat-overlay.open { display:flex; }
+  .chat-box { width:460px; height:680px; background:var(--surface); border:1px solid var(--border); border-radius:16px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 24px 80px rgba(26,40,64,0.18); }
+  .chat-head { padding:14px 16px; background:#FAFCFF; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .chat-head-title { font-size:13px; font-weight:700; color:var(--white); display:flex; align-items:center; gap:8px; }
+  .chat-ai-dot { width:8px; height:8px; border-radius:50%; background:var(--cyan); animation:pulse 2s infinite; }
+  .chat-close { background:none; border:none; color:var(--muted); cursor:pointer; font-size:18px; }
+  .chat-messages { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; background:var(--bg); }
+  .msg { max-width:92%; padding:10px 12px; border-radius:10px; font-size:11.5px; line-height:1.6; }
+  .msg.ai { background:var(--surface); color:var(--white); align-self:flex-start; border-radius:10px 10px 10px 2px; border:1px solid var(--border); }
+  .msg.user { background:var(--blue); color:#fff; align-self:flex-end; border-radius:10px 10px 2px 10px; }
+
+  /* chart inside message */
+  .msg-chart-wrap { margin-top:10px; background:var(--bg); border-radius:8px; padding:10px; border:1px solid var(--border); }
+  .msg-chart-title { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.7px; margin-bottom:8px; }
+
+  .suggested-qs { margin-top:8px; display:flex; flex-direction:column; gap:5px; }
+  .sugg-btn { background:rgba(26,111,212,0.07); border:1px solid rgba(26,111,212,0.2); color:var(--blue); padding:5px 10px; border-radius:7px; font-size:10.5px; cursor:pointer; text-align:left; transition:all 0.2s; font-family:var(--font); }
+  .sugg-btn:hover { background:rgba(26,111,212,0.14); }
+
+  /* quick pills */
+  .prefed-qs { padding:8px 14px; display:flex; gap:6px; flex-wrap:wrap; border-top:1px solid var(--border); background:#FAFCFF; }
+  .prefed-btn { font-size:10px; padding:3px 9px; border-radius:10px; background:rgba(0,153,168,0.08); border:1px solid rgba(0,153,168,0.25); color:var(--cyan); cursor:pointer; font-family:var(--font); transition:all 0.2s; }
+  .prefed-btn:hover { background:rgba(0,153,168,0.16); }
+
+  /* pinned KBQs */
+  .pinned-qs-wrap { padding:10px 14px 12px; border-top:1px solid var(--border); background:#FAFCFF; }
+  .pinned-qs-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:7px; }
+  .pinned-qs { display:flex; flex-direction:column; gap:6px; }
+  .pinned-btn { display:flex; align-items:flex-start; gap:9px; background:#fff; border:1px solid var(--border); border-left:3px solid var(--blue); padding:8px 10px; border-radius:8px; cursor:pointer; text-align:left; font-family:var(--font); transition:all 0.18s; width:100%; }
+  .pinned-btn:hover { background:rgba(26,111,212,0.05); border-color:var(--blue); box-shadow:0 2px 8px rgba(26,111,212,0.1); }
+  .pinned-num { flex-shrink:0; font-size:10px; font-weight:800; color:var(--blue); background:rgba(26,111,212,0.1); padding:2px 7px; border-radius:10px; margin-top:1px; }
+  .pinned-text { font-size:10.5px; color:var(--white); line-height:1.5; }
+
+  .chat-input-area { padding:12px; border-top:1px solid var(--border); display:flex; gap:8px; background:var(--surface); }
+  .chat-input { flex:1; background:var(--bg); border:1px solid var(--border); color:var(--white); padding:8px 12px; border-radius:8px; font-family:var(--font); font-size:12px; outline:none; }
+  .chat-input:focus { border-color:var(--blue); }
+  .chat-send { background:var(--blue); border:none; color:#fff; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:600; font-family:var(--font); }
+
+  /* typing indicator */
+  .typing-indicator { display:flex; gap:4px; padding:10px 14px; align-self:flex-start; }
+  .typing-dot { width:7px; height:7px; border-radius:50%; background:var(--muted); animation:typingBounce 1.2s infinite; }
+  .typing-dot:nth-child(2) { animation-delay:0.2s; }
+  .typing-dot:nth-child(3) { animation-delay:0.4s; }
+  @keyframes typingBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+  /* MODALS */
+  .modal-overlay { display:none; position:fixed; inset:0; z-index:300; background:rgba(240,244,249,0.9); backdrop-filter:blur(8px); align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px; width:440px; box-shadow:0 24px 80px rgba(26,40,64,0.18); }
+  .modal-title { font-size:15px; font-weight:700; margin-bottom:16px; }
+  .modal label { font-size:11px; color:var(--muted); display:block; margin-bottom:4px; margin-top:12px; }
+  .modal input,.modal select { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--white); padding:8px 12px; border-radius:8px; font-family:var(--font); font-size:12px; outline:none; }
+  .modal-btns { display:flex; gap:8px; margin-top:20px; justify-content:flex-end; }
+  .modal-cancel { background:var(--bg); color:var(--muted); border:1px solid var(--border); padding:7px 16px; border-radius:7px; cursor:pointer; font-family:var(--font); font-size:12px; }
+  .summary-overlay { display:none; position:fixed; inset:0; z-index:250; background:rgba(240,244,249,0.85); backdrop-filter:blur(6px); align-items:center; justify-content:center; }
+  .summary-overlay.open { display:flex; }
+  .summary-box { background:var(--surface); border:1px solid var(--border); border-radius:16px; width:560px; max-height:80vh; overflow-y:auto; padding:24px; box-shadow:0 24px 80px rgba(26,40,64,0.18); }
+  .summary-title { font-family:var(--display); font-size:20px; font-weight:700; margin-bottom:6px; }
+  .summary-sub { font-size:11px; color:var(--muted); margin-bottom:20px; }
+  .summary-section { margin-bottom:18px; }
+  .summary-section h4 { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--cyan); margin-bottom:8px; }
+  .summary-section p { font-size:12px; color:var(--muted); line-height:1.7; }
+  .summary-kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; }
+  .sum-kpi { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center; }
+  .sum-kpi .val { font-size:20px; font-weight:700; }
+  .sum-kpi .lbl { font-size:10px; color:var(--muted); margin-top:3px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo-axtria"><div class="a-mark">A</div><span>Axtria</span></div>
+    <div class="logo-divider"></div>
+    <div class="logo-kite"><div class="k-mark">K</div><span>Kite Pharma</span></div>
+  </div>
+  <div class="header-center">Patient Journey Insights — CAR-T Analytics Platform</div>
+  <div class="header-right">
+    <div class="persona-toggle">
+      <button class="persona-btn active" onclick="switchPersona('exec')">👔 David (Exec)</button>
+      <button class="persona-btn" onclick="switchPersona('hq')">🔬 Anna (CAR-T Analyst)</button>
+    </div>
+    <div class="refresh-badge"><span class="dot"></span>Live · <span id="refresh-time">--</span></div>
+    <div class="user-chip">
+      <div class="user-avatar avatar-exec" id="user-avatar">D</div>
+      <span id="user-name">David Chen · VP Commercial</span>
+    </div>
+  </div>
+</header>
+
+<!-- ACTION BAR -->
+<div class="action-bar">
+  <div class="filters">
+    <div class="filter-group"><span class="filter-label">Time Period</span>
+      <select class="filter-select" onchange="updateDashboard()">
+        <option>Jan 2025</option><option>Feb 2025</option><option>Mar 2025</option><option>Apr 2025</option><option>May 2025</option><option>Jun 2025</option><option>Jul 2025</option><option>Aug 2025</option><option>Sep 2025</option><option>Oct 2025</option><option>Nov 2025</option><option selected>Dec 2025</option><option>Jan 2026</option><option>Feb 2026</option><option>All 2025</option>
+      </select></div>
+    <div class="filter-group"><span class="filter-label">Region</span>
+      <select class="filter-select" onchange="updateDashboard()"><option>All Regions</option><option>East</option><option>West</option><option>North</option><option>South</option></select></div>
+    <div class="filter-group"><span class="filter-label">Product</span>
+      <select class="filter-select"><option>CAR-T (Yescarta)</option><option>CAR-T (Tecartus)</option></select></div>
+    <div class="filter-group"><span class="filter-label">Indication</span>
+      <select class="filter-select"><option>DLBCL</option><option>FL 3L</option><option>MCL</option><option>ALL</option></select></div>
+    <div class="filter-group"><span class="filter-label">Line of Therapy</span>
+      <select class="filter-select"><option>All Lines</option><option>2L</option><option>3L</option><option>ONC</option></select></div>
+  </div>
+  <div class="action-btns">
+    <button class="btn btn-primary" onclick="openChat()">💬 AI Insights Chat</button>
+    <button class="btn btn-ghost" onclick="openSummary()">📋 Exec Summary</button>
+    <button class="btn btn-alert" onclick="openAlerts()">🔔 Set Alert</button>
+    <button class="btn btn-share" onclick="shareAction()">↗ Share</button>
+    <button class="btn btn-ghost">⬇ Export</button>
+  </div>
+</div>
+
+<!-- EXEC DASHBOARD -->
+<div class="dashboard active" id="dashboard-exec">
+  <div class="kpi-row">
+    <div class="kpi-card" style="--accent-color:#1A6FD4"><div class="kpi-label">Total Registered</div><div class="kpi-value" style="color:#1A6FD4">248</div><div class="kpi-delta delta-up">▲ 14% vs prior period</div></div>
+    <div class="kpi-card" style="--accent-color:#0099A8"><div class="kpi-label">Infusions Completed</div><div class="kpi-value" style="color:#0099A8">183</div><div class="kpi-delta delta-up">▲ 9% vs target</div></div>
+    <div class="kpi-card" style="--accent-color:#C93535"><div class="kpi-label">Overall Cancel Rate</div><div class="kpi-value" style="color:#C93535">26.2%</div><div class="kpi-delta delta-down">▼ 2.1pp vs Q3</div></div>
+    <div class="kpi-card" style="--accent-color:#C07B00"><div class="kpi-label">Avg Time-to-Treat</div><div class="kpi-value" style="color:#C07B00">63d</div><div class="kpi-delta delta-neu">● Target: ≤60d</div></div>
+    <div class="kpi-card" style="--accent-color:#6D3FC9"><div class="kpi-label">Market Share</div><div class="kpi-value" style="color:#6D3FC9">52%</div><div class="kpi-delta delta-up">▲ 1.8pp vs Breyanzi</div></div>
+    <div class="kpi-card" style="--accent-color:#0B8A5C"><div class="kpi-label">Actual vs Budget</div><div class="kpi-value" style="color:#0B8A5C">97%</div><div class="kpi-delta delta-up">▲ On track H2</div></div>
+  </div>
+  <div class="main-grid">
+    <div class="col-left">
+      <div class="panel"><div class="panel-head"><span class="panel-title">🔬 Patient Journey Funnel <span class="panel-tag tag-live">Live</span></span><span class="badge badge-blue">Jan 2025 – Feb 2026</span></div><div class="panel-body"><div class="funnel-wrap" id="funnel-exec"></div></div></div>
+      <div class="panel"><div class="panel-head"><span class="panel-title">⏱ Turnaround Time by Stage <span class="panel-tag tag-live">Actual vs Target</span></span></div><div class="panel-body"><div class="tat-wrap" id="tat-exec"></div></div></div>
+    </div>
+    <div class="col-left">
+      <div class="panel"><div class="panel-head"><span class="panel-title">📊 Patient Enrollment by Region</span><span class="badge badge-green">Jan 2025 – Feb 2026</span></div><div class="panel-body" style="padding:8px 0"><table class="grid-table" id="grid-exec"></table></div></div>
+      <div class="panel"><div class="panel-head"><span class="panel-title">🗺 Regional Cancellation Rate</span></div><div class="panel-body"><canvas id="regionChart-exec" height="160"></canvas></div></div>
+    </div>
+    <div class="col-right">
+      <div class="panel" style="flex:1">
+        <div class="panel-head"><span class="panel-title">🧠 Predictive &amp; Prescriptive Insights</span><span class="panel-tag tag-pred">AI-Powered</span></div>
+        <div class="insights-panel">
+          <div class="insight-tabs">
+            <div class="insight-tab active" onclick="switchTab(this,'pred-exec')">Predictive</div>
+            <div class="insight-tab" onclick="switchTab(this,'presc-exec')">Prescriptive</div>
+            <div class="insight-tab" onclick="switchTab(this,'value-exec')">Value Created</div>
+          </div>
+          <div class="insight-content active" id="pred-exec">
+            <div class="insight-card"><div class="insight-head"><span class="insight-icon">⚠️</span><span class="insight-title">Manufacturing Slot Risk — East Region</span></div><div class="insight-body">Apheresis volume in East is projected to exceed available slot capacity by 18% in the next 6 weeks.</div><span class="insight-metric metric-warn">● Slot Utilisation: 94% → 112% projected</span></div>
+            <div class="insight-card amber"><div class="insight-head"><span class="insight-icon">📉</span><span class="insight-title">Cancellation Spike — South QTCs</span></div><div class="insight-body">ML model flags 3 South-region patients with cancellation probability >72%. Primary driver: insurance denial + delayed pre-auth.</div><span class="insight-metric metric-down">● Cancel Risk: 72–81% for 3 patients</span></div>
+            <div class="insight-card" style="border-left-color:var(--blue)"><div class="insight-head"><span class="insight-icon">📈</span><span class="insight-title">2L Market Share — West Opportunity</span></div><div class="insight-body">Breyanzi gained 3pp share in West over last 60 days.</div><span class="insight-metric metric-warn">● West share: 48% (−3pp from peak)</span></div>
+          </div>
+          <div class="insight-content" id="presc-exec">
+            <div class="insight-card green"><div class="insight-head"><span class="insight-icon">✅</span><span class="insight-title">Action: Deploy Patient Navigators — South</span></div><div class="insight-body">Assign 2 patient navigators to high-risk South registrations. Model shows navigator intervention reduces cancel rate by 34%.</div><span class="insight-metric metric-up">▲ Est. 2 infusions saved · $1.4M revenue protected</span></div>
+            <div class="insight-card amber"><div class="insight-head"><span class="insight-icon">📅</span><span class="insight-title">Action: Expedite East Slot Allocation</span></div><div class="insight-body">Request emergency slot release from Kite Manufacturing for weeks 6–8.</div><span class="insight-metric metric-warn">● 3 patients at risk of >45d Aph→Del delay</span></div>
+            <div class="insight-card" style="border-left-color:var(--blue)"><div class="insight-head"><span class="insight-icon">🤝</span><span class="insight-title">Action: KAM Re-engagement — West Treaters</span></div><div class="insight-body">Schedule KAM visits with Dr. M. Torres &amp; Dr. K. Patel within 2 weeks.</div><span class="insight-metric metric-up">▲ 2pp share recovery est. in 60 days</span></div>
+          </div>
+          <div class="insight-content" id="value-exec">
+            <div class="value-section"><div class="value-title">💎 Value Created</div>
+              <div class="value-row"><span class="value-kpi">Navigator deployment (Nov 2025)</span><span class="value-change">▲ −4.2pp cancel rate</span></div>
+              <div class="value-row"><span class="value-kpi">Slot reallocation (Oct 2025)</span><span class="value-change">▲ TTT reduced 5.3 days</span></div>
+              <div class="value-row"><span class="value-kpi">MSL re-engagement West (Sep 2025)</span><span class="value-change">▲ +$2.1M revenue</span></div>
+              <div class="value-row"><span class="value-kpi">PSP T&L program expansion</span><span class="value-change">▲ OOP dropout −18%</span></div>
+            </div>
+            <div style="margin-top:14px;padding:12px;background:rgba(0,153,168,0.07);border-radius:8px;border:1px solid rgba(0,153,168,0.2);border-left:3px solid var(--cyan);border-left-width:3px">
+              <div style="font-size:10px;color:var(--cyan);font-weight:700;margin-bottom:6px">CUMULATIVE IMPACT (YTD)</div>
+              <div style="font-size:22px;font-weight:700;color:var(--green)">+$4.8M</div>
+              <div style="font-size:10px;color:var(--muted)">Incremental revenue vs. baseline without prescribed actions</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CAR-T ANALYST DASHBOARD -->
+<div class="dashboard" id="dashboard-hq">
+  <div class="kpi-row">
+    <div class="kpi-card" style="--accent-color:#0099A8"><div class="kpi-label">Active Registrations</div><div class="kpi-value" style="color:#0099A8">41</div><div class="kpi-delta delta-up">▲ 8 new this week</div></div>
+    <div class="kpi-card" style="--accent-color:#6D3FC9"><div class="kpi-label">Pending Apheresis</div><div class="kpi-value" style="color:#6D3FC9">18</div><div class="kpi-delta delta-neu">● 3 at slot risk</div></div>
+    <div class="kpi-card" style="--accent-color:#C05C0A"><div class="kpi-label">In Manufacturing</div><div class="kpi-value" style="color:#C05C0A">23</div><div class="kpi-delta delta-down">▼ 2 on QC hold</div></div>
+    <div class="kpi-card" style="--accent-color:#1A6FD4"><div class="kpi-label">Infusions Scheduled</div><div class="kpi-value" style="color:#1A6FD4">11</div><div class="kpi-delta delta-up">▲ 2 ahead of plan</div></div>
+    <div class="kpi-card" style="--accent-color:#C93535"><div class="kpi-label">High Risk Patients</div><div class="kpi-value" style="color:#C93535">6</div><div class="kpi-delta delta-down">▼ Cancel score &gt;70%</div></div>
+    <div class="kpi-card" style="--accent-color:#0B8A5C"><div class="kpi-label">Avg Mfg TAT</div><div class="kpi-value" style="color:#0B8A5C">34.2d</div><div class="kpi-delta delta-up">▲ 0.8d under target</div></div>
+  </div>
+  <div class="main-grid">
+    <div class="col-left">
+      <div class="panel"><div class="panel-head"><span class="panel-title">🔬 Patient Journey Funnel — Operational View <span class="panel-tag tag-live">Live</span></span></div><div class="panel-body"><div class="funnel-wrap" id="funnel-hq"></div></div></div>
+      <div class="panel"><div class="panel-head"><span class="panel-title">⏱ Turnaround Time — QTC Detail <span class="panel-tag tag-live">vs 60-day target</span></span></div><div class="panel-body"><div class="tat-wrap" id="tat-hq"></div></div></div>
+    </div>
+    <div class="col-left">
+      <div class="panel"><div class="panel-head"><span class="panel-title">📊 Enrollment by Region — Monthly Detail</span></div><div class="panel-body" style="padding:8px 0"><table class="grid-table" id="grid-hq"></table></div></div>
+      <div class="panel"><div class="panel-head"><span class="panel-title">🗺 Cancellation Rate by Region</span></div><div class="panel-body"><canvas id="regionChart-hq" height="160"></canvas></div></div>
+    </div>
+    <div class="col-right">
+      <div class="panel" style="flex:1">
+        <div class="panel-head"><span class="panel-title">🧬 Operational Insights — CAR-T Analytics</span><span class="panel-tag tag-pred">Predictive</span></div>
+        <div class="insights-panel">
+          <div class="insight-tabs">
+            <div class="insight-tab active" onclick="switchTab(this,'pred-hq')">Predictive</div>
+            <div class="insight-tab" onclick="switchTab(this,'presc-hq')">Prescriptive</div>
+            <div class="insight-tab" onclick="switchTab(this,'value-hq')">Value Created</div>
+          </div>
+          <div class="insight-content active" id="pred-hq">
+            <div class="insight-card" style="border-left-color:var(--orange)"><div class="insight-head"><span class="insight-icon">🏭</span><span class="insight-title">QC Hold Risk — 2 Batches</span></div><div class="insight-body">Batch #YES-2024-1182 and #YES-2024-1197 flagged for extended QC review. Earliest release now Day 37.</div><span class="insight-metric metric-warn">● Release delay: +2 days projected</span></div>
+            <div class="insight-card amber"><div class="insight-head"><span class="insight-icon">🚚</span><span class="insight-title">Logistics Delay — North Cold Chain</span></div><div class="insight-body">Weather-related disruption in North corridor over next 72h. 4 deliveries at risk.</div><span class="insight-metric metric-warn">● 4 deliveries at risk · Action window: 24h</span></div>
+            <div class="insight-card"><div class="insight-head"><span class="insight-icon">📋</span><span class="insight-title">REMS Compliance Gap — South Sites</span></div><div class="insight-body">3 South QTCs have outstanding 90-day outcome submissions. Deadline: 15 Feb 2026.</div><span class="insight-metric metric-down">● 3 overdue submissions · 12 days remaining</span></div>
+          </div>
+          <div class="insight-content" id="presc-hq">
+            <div class="insight-card green"><div class="insight-head"><span class="insight-icon">🔄</span><span class="insight-title">Action: Reroute North Deliveries Now</span></div><div class="insight-body">Initiate logistics rerouting for 4 North deliveries to West hub pathway via CP-07 protocol.</div><span class="insight-metric metric-up">▲ All 4 patients protected · Zero infusion delay</span></div>
+            <div class="insight-card amber"><div class="insight-head"><span class="insight-icon">📞</span><span class="insight-title">Action: QC Escalation — Lot #1182</span></div><div class="insight-body">Escalate to Kite Manufacturing Director. Request expedited secondary analysis.</div><span class="insight-metric metric-warn">● Patient bridging therapy review needed</span></div>
+            <div class="insight-card" style="border-left-color:var(--blue)"><div class="insight-head"><span class="insight-icon">📝</span><span class="insight-title">Action: REMS Submission Blitz — South</span></div><div class="insight-body">Deploy REMS coordinator support to 3 South QTCs. Compliance target 100% before Feb 15.</div><span class="insight-metric metric-up">▲ Avoids regulatory audit risk</span></div>
+          </div>
+          <div class="insight-content" id="value-hq">
+            <div class="value-section"><div class="value-title">💎 Operational Value Created</div>
+              <div class="value-row"><span class="value-kpi">Proactive logistics rerouting (Dec 2025)</span><span class="value-change">▲ 6 infusions protected</span></div>
+              <div class="value-row"><span class="value-kpi">QC early-warning system (Q3 2025)</span><span class="value-change">▲ TAT reduced 2.1 days</span></div>
+              <div class="value-row"><span class="value-kpi">REMS auto-escalation (Oct 2025)</span><span class="value-change">▲ Compliance: 68% → 94%</span></div>
+              <div class="value-row"><span class="value-kpi">Slot demand forecasting model</span><span class="value-change">▲ 0 slot conflicts in 90 days</span></div>
+            </div>
+            <div style="margin-top:14px;padding:12px;background:rgba(0,153,168,0.07);border-radius:8px;border:1px solid rgba(0,153,168,0.2);border-left:3px solid var(--cyan);border-left-width:3px">
+              <div style="font-size:10px;color:var(--cyan);font-weight:700;margin-bottom:6px">OPERATIONAL EFFICIENCY GAIN (YTD)</div>
+              <div style="font-size:22px;font-weight:700;color:var(--green)">11.2 days</div>
+              <div style="font-size:10px;color:var(--muted)">Average TTT reduction vs. pre-analytics baseline</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI CHAT -->
+<div class="chat-overlay" id="chat-overlay" onclick="if(event.target===this)closeChat()">
+  <div class="chat-box">
+    <div class="chat-head">
+      <div class="chat-head-title"><div class="chat-ai-dot"></div>Axtria AI — CAR-T Deep Dive</div>
+      <button class="chat-close" onclick="closeChat()">✕</button>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg ai">Hi <span id="chat-persona-name">David</span> 👋 I'm your CAR-T analytics assistant. I can answer questions about the patient funnel, cancellations, manufacturing, and market share — with charts where helpful. What would you like to explore?
+        <div class="suggested-qs">
+          <button class="sugg-btn" onclick="askQ('Why is the South cancel rate highest?')">Why is the South cancel rate highest?</button>
+          <button class="sugg-btn" onclick="askQ('Which QTC has the worst Aph→Mfg TAT?')">Which QTC has the worst Aph→Mfg TAT?</button>
+          <button class="sugg-btn" onclick="askQ(\"What's driving Breyanzi share gains in West?\")">What's driving Breyanzi share gains in West?</button>
+        </div>
+      </div>
+    </div>
+    <div class="prefed-qs">
+      <button class="prefed-btn" onclick="askQ('Summarize the funnel for this period')">Funnel Summary</button>
+      <button class="prefed-btn" onclick="askQ('Show me patients at highest cancellation risk')">Cancel Risk</button>
+      <button class="prefed-btn" onclick="askQ('What is our forecast for Q1 2026 infusions?')">Q1 Forecast</button>
+      <button class="prefed-btn" onclick="askQ('Which region needs most attention?')">Region Alert</button>
+    </div>
+    <div class="pinned-qs-wrap">
+      <div class="pinned-qs-label">📌 Key Business Questions</div>
+      <div class="pinned-qs">
+        <button class="pinned-btn" onclick="askQ('Where are patients dropping off most in the funnel (Registration → Apheresis → Delivery → Infusion), and which cancellation stage drives the highest attrition?')">
+          <span class="pinned-num">Q1</span>
+          <span class="pinned-text">Where are patients dropping off most in the funnel (Registration → Apheresis → Delivery → Infusion), and which cancellation stage drives the highest attrition?</span>
+        </button>
+        <button class="pinned-btn" onclick="askQ('Which indication or line of therapy shows the highest drop-off rates?')">
+          <span class="pinned-num">Q2</span>
+          <span class="pinned-text">Which indication or line of therapy shows the highest drop-off rates?</span>
+        </button>
+        <button class="pinned-btn" onclick="askQ('Which cancellation stage drives the highest attrition?')">
+          <span class="pinned-num">Q3</span>
+          <span class="pinned-text">Which cancellation stage drives the highest attrition?</span>
+        </button>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <input class="chat-input" id="chat-input" placeholder="Ask anything about CAR-T analytics…" onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="chat-send" onclick="sendChat()">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- ALERT MODAL -->
+<div class="modal-overlay" id="alert-overlay" onclick="if(event.target===this)closeAlerts()">
+  <div class="modal">
+    <div class="modal-title">🔔 Set Analytics Alert</div>
+    <label>Alert Type</label><select class="filter-select" style="width:100%"><option>Cancellation Rate Threshold</option><option>TTT Exceeds Target</option><option>Manufacturing Slot Shortage</option><option>Market Share Drop</option><option>REMS Compliance Deadline</option></select>
+    <label>Threshold</label><input type="text" placeholder="e.g. Cancel rate > 15%">
+    <label>Notify via</label><select class="filter-select" style="width:100%"><option>Email + Dashboard Banner</option><option>Slack / Teams</option><option>SMS</option></select>
+    <label>Region Scope</label><select class="filter-select" style="width:100%"><option>All Regions</option><option>East</option><option>West</option><option>North</option><option>South</option></select>
+    <div class="modal-btns"><button class="modal-cancel" onclick="closeAlerts()">Cancel</button><button class="btn btn-primary" onclick="saveAlert()">Save Alert</button></div>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="summary-overlay" id="summary-overlay" onclick="if(event.target===this)closeSummary()">
+  <div class="summary-box" id="summary-content"></div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────
+const DATA = {
+  exec: {
+    funnel:[
+      {stage:'Referral',count:248,pct:100,col:'#C05C0A'},
+      {stage:'Leukapheresis',count:218,pct:87.9,col:'#1A6FD4',drop:'12.1% cancelled'},
+      {stage:'Manufacturing',count:198,pct:79.8,col:'#6D3FC9',drop:'9.2% cancelled'},
+      {stage:'Infusion',count:183,pct:73.8,col:'#0099A8',drop:'7.6% cancelled'},
+    ],
+    tat:[
+      {label:'Referral → Leukapheresis',actual:22.4,target:20,col:'#C05C0A',max:35},
+      {label:'Leukapheresis → Manufacturing',actual:35.1,target:33,col:'#6D3FC9',max:50},
+      {label:'Manufacturing → Infusion',actual:6.8,target:7,col:'#0099A8',max:15},
+    ],
+    grid:[
+      {region:'East',jan:24,feb:18,mar:22,apr:20,may:19,jun:23,jul:21,aug:25,sep:22,oct:20,nov:24,dec:21,jan26:8,feb26:6},
+      {region:'West',jan:18,feb:16,mar:20,apr:17,may:21,jun:19,jul:18,aug:22,sep:20,oct:19,nov:21,dec:18,jan26:7,feb26:5},
+      {region:'North',jan:12,feb:10,mar:14,apr:11,may:13,jun:12,jul:14,aug:15,sep:13,oct:11,nov:14,dec:12,jan26:5,feb26:3},
+      {region:'South',jan:16,feb:14,mar:17,apr:15,may:18,jun:16,jul:17,aug:19,sep:16,oct:15,nov:17,dec:16,jan26:6,feb26:4},
+    ],
+    regional:{labels:['East','West','North','South'],values:[23.1,25.4,28.7,30.2]}
+  },
+  hq:{
+    funnel:[
+      {stage:'Active Registrations',count:41,pct:100,col:'#0099A8'},
+      {stage:'Pending Apheresis',count:34,pct:82.9,col:'#1A6FD4',drop:'17.1% not yet scheduled'},
+      {stage:'In Manufacturing',count:23,pct:56.1,col:'#6D3FC9',drop:'32.4% awaiting dispatch'},
+      {stage:'Infusions Scheduled',count:11,pct:26.8,col:'#0B8A5C',drop:'52.2% in progress'},
+    ],
+    tat:[
+      {label:'Reg → Apheresis (slot wait)',actual:8.3,target:7,col:'#0099A8',max:15},
+      {label:'Apheresis → Manufacturing release',actual:34.2,target:35,col:'#6D3FC9',max:50},
+      {label:'Release → Infusion',actual:6.1,target:7,col:'#0B8A5C',max:15},
+    ],
+    grid:[
+      {region:'East',jan:24,feb:18,mar:22,apr:20,may:19,jun:23,jul:21,aug:25,sep:22,oct:20,nov:24,dec:21,jan26:8,feb26:6},
+      {region:'West',jan:18,feb:16,mar:20,apr:17,may:21,jun:19,jul:18,aug:22,sep:20,oct:19,nov:21,dec:18,jan26:7,feb26:5},
+      {region:'North',jan:12,feb:10,mar:14,apr:11,may:13,jun:12,jul:14,aug:15,sep:13,oct:11,nov:14,dec:12,jan26:5,feb26:3},
+      {region:'South',jan:16,feb:14,mar:17,apr:15,may:18,jun:16,jul:17,aug:19,sep:16,oct:15,nov:17,dec:16,jan26:6,feb26:4},
+    ],
+    regional:{labels:['East','West','North','South'],values:[19.4,21.8,24.3,27.6]}
+  }
+};
+
+let currentPersona='exec', dashCharts={}, msgChartCount=0;
+
+// ── PERSONA ───────────────────────────────────────
+function switchPersona(p){
+  currentPersona=p;
+  document.querySelectorAll('.persona-btn').forEach((b,i)=>b.classList.toggle('active',(p==='exec'&&i===0)||(p==='hq'&&i===1)));
+  document.querySelectorAll('.dashboard').forEach(d=>d.classList.remove('active'));
+  document.getElementById('dashboard-'+p).classList.add('active');
+  const isExec=p==='exec';
+  document.getElementById('user-name').textContent=isExec?'David Chen · VP Commercial':'Anna Müller · CAR-T Analyst';
+  document.getElementById('user-avatar').textContent=isExec?'D':'A';
+  document.getElementById('user-avatar').className='user-avatar '+(isExec?'avatar-exec':'avatar-hq');
+  document.getElementById('chat-persona-name').textContent=isExec?'David':'Anna';
+}
+
+// ── DASHBOARD BUILDERS ────────────────────────────
+function buildFunnel(id,data){
+  const el=document.getElementById(id); if(!el)return;
+  const max=data[0].count;
+  el.innerHTML=data.map((s,i)=>`
+    <div>
+      ${i>0?`<div class="funnel-arrow">↓ <span style="color:var(--red);font-size:10px">${data[i].drop}</span></div>`:''}
+      <div class="funnel-stage">
+        <div class="funnel-label">${s.stage}</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${(s.count/max)*100}%;background:${s.col}">${s.pct.toFixed(1)}%</div></div>
+        <div class="funnel-count">${s.count}</div>
+      </div>
+    </div>`).join('');
+}
+function buildTAT(id,data){
+  const el=document.getElementById(id); if(!el)return;
+  el.innerHTML=data.map(t=>{
+    const pct=(t.actual/t.max)*100,tpct=(t.target/t.max)*100,over=t.actual>t.target;
+    return `<div class="tat-row">
+      <div class="tat-meta"><span class="tat-stage">${t.label}</span><span class="tat-value" style="color:${over?'var(--amber)':'var(--green)'}">${t.actual}d ${over?'⚠':'✓'}</span></div>
+      <div class="tat-bar-bg" style="position:relative">
+        <div class="tat-bar-fill" style="width:${pct}%;background:${t.col}"></div>
+        <div style="position:absolute;top:0;left:${tpct}%;width:2px;height:100%;background:rgba(26,40,64,0.3)"></div>
+      </div>
+      <div class="tat-target">Target: ${t.target}d | Actual: ${t.actual}d | ${over?`<span style="color:var(--amber)">+${(t.actual-t.target).toFixed(1)}d over</span>`:`<span style="color:var(--green)">On track</span>`}</div>
+    </div>`;
+  }).join('');
+}
+function buildGrid(id,rows){
+  const el=document.getElementById(id); if(!el)return;
+  const cols=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec','jan26','feb26'];
+  const lbls=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan26','Feb26'];
+  const maxV=Math.max(...rows.flatMap(r=>cols.map(c=>r[c])));
+  el.innerHTML=`<thead><tr><th>Region</th>${lbls.map(l=>`<th>${l}</th>`).join('')}<th>Total</th></tr></thead>
+    <tbody>${rows.map(r=>{
+      const tot=cols.reduce((s,c)=>s+r[c],0);
+      return `<tr><td style="font-weight:600">${r.region}</td>${cols.map(c=>{
+        const v=r[c],int=v/maxV;
+        return `<td><span class="heat-cell" style="background:rgba(26,111,212,${(int*0.25).toFixed(2)});color:var(--white)">${v}</span></td>`;
+      }).join('')}<td style="font-weight:700;color:var(--cyan)">${tot}</td></tr>`;
+    }).join('')}</tbody>`;
+}
+function buildRegionChart(cid,d){
+  if(dashCharts[cid]){dashCharts[cid].destroy();}
+  const ctx=document.getElementById(cid); if(!ctx)return;
+  dashCharts[cid]=new Chart(ctx,{type:'bar',data:{labels:d.labels,datasets:[{label:'Cancel Rate %',data:d.values,backgroundColor:['rgba(26,111,212,0.7)','rgba(109,63,201,0.7)','rgba(192,123,0,0.7)','rgba(201,53,53,0.7)'],borderColor:['#1A6FD4','#6D3FC9','#C07B00','#C93535'],borderWidth:1.5,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.parsed.y}% cancel rate`}}},scales:{x:{grid:{color:'rgba(216,227,238,0.6)'},ticks:{color:'#5A7290',font:{size:11}}},y:{grid:{color:'rgba(216,227,238,0.6)'},ticks:{color:'#5A7290',font:{size:11},callback:v=>v+'%'},min:0,max:40}}}});
+}
+function switchTab(el,cid){
+  el.parentElement.querySelectorAll('.insight-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  el.closest('.insights-panel').querySelectorAll('.insight-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById(cid).classList.add('active');
+}
+
+// ── CHAT CHART CONFIGS ────────────────────────────
+const CHAT_CHARTS = {
+  'Where are patients dropping off most in the funnel (Registration → Apheresis → Delivery → Infusion), and which cancellation stage drives the highest attrition?': {
+    text: "The steepest drop-off is at <strong>Registration → Apheresis</strong>, accounting for <strong>12.1% attrition (30 patients)</strong>. Manufacturing → Infusion follows at 9.2%. The Apheresis stage is the single biggest driver due to insurance denials (41%), disease progression (34%), and patient withdrawal (25%). Of 65 total cancellations, <strong>46% occurred pre-apheresis</strong> — making this the highest-priority intervention point.",
+    followUps:['What are the top reasons for pre-apheresis cancellations?','Which region has the worst Registration → Apheresis drop-off?','What interventions reduce pre-apheresis attrition most?'],
+    charts:[
+      {
+        id:'chat-funnel-drop',
+        title:'Patient Funnel — Stage-by-Stage Attrition',
+        type:'bar',
+        data:{
+          labels:['Registration','Apheresis','Manufacturing','Infusion'],
+          datasets:[
+            {label:'Patients Remaining',data:[248,218,198,183],backgroundColor:['rgba(26,111,212,0.8)','rgba(109,63,201,0.8)','rgba(192,123,0,0.8)','rgba(11,138,92,0.8)'],borderRadius:5},
+          ]
+        },
+        options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}},grid:{color:'rgba(216,227,238,0.5)'}},y:{ticks:{font:{size:10}},grid:{display:false}}}}
+      },
+      {
+        id:'chat-cancel-reason',
+        title:'Cancellation Reasons — Apheresis Stage',
+        type:'doughnut',
+        data:{
+          labels:['Insurance Denial','Disease Progression','Patient Withdrawal'],
+          datasets:[{data:[41,34,25],backgroundColor:['rgba(201,53,53,0.8)','rgba(192,123,0,0.8)','rgba(109,63,201,0.8)'],borderWidth:0}]
+        },
+        options:{plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}}}
+      }
+    ]
+  },
+  'Which indication or line of therapy shows the highest drop-off rates?':{
+    text:"<strong>DLBCL 3L+</strong> shows the highest overall drop-off at <strong>31.4%</strong>, followed by FL 3L (27.8%) and MCL (24.2%). Within lines of therapy, 3rd-line patients have a <strong>29.6% cancellation rate vs. 21.3% for 2L</strong> — largely due to advanced disease and higher bridging therapy failure rates.",
+    followUps:['Which sites have the worst DLBCL 3L outcomes?','How does bridging therapy impact 3L cancellation rates?','What is the TTT breakdown by line of therapy?'],
+    charts:[
+      {
+        id:'chat-indication-drop',
+        title:'Drop-off Rate by Indication',
+        type:'bar',
+        data:{
+          labels:['DLBCL 3L+','FL 3L','MCL','DLBCL 2L','ALL'],
+          datasets:[{label:'Drop-off %',data:[31.4,27.8,24.2,21.3,18.9],backgroundColor:['rgba(201,53,53,0.8)','rgba(192,123,0,0.8)','rgba(109,63,201,0.8)','rgba(26,111,212,0.8)','rgba(11,138,92,0.8)'],borderRadius:5}]
+        },
+        options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}},grid:{color:'rgba(216,227,238,0.5)'}},y:{ticks:{font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(216,227,238,0.5)'},min:0,max:40}}}
+      },
+      {
+        id:'chat-lot-drop',
+        title:'Cancellation Rate by Line of Therapy',
+        type:'bar',
+        data:{
+          labels:['2L','3L','3L+'],
+          datasets:[
+            {label:'Cancel Rate %',data:[21.3,29.6,31.4],backgroundColor:['rgba(26,111,212,0.75)','rgba(192,123,0,0.75)','rgba(201,53,53,0.75)'],borderRadius:5},
+            {label:'Target %',data:[20,20,20],type:'line',borderColor:'rgba(11,138,92,0.8)',borderDash:[4,3],borderWidth:1.5,pointRadius:0,fill:false}
+          ]
+        },
+        options:{plugins:{legend:{labels:{font:{size:10},boxWidth:10}}},scales:{x:{ticks:{font:{size:10}},grid:{display:false}},y:{ticks:{font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(216,227,238,0.5)'},min:0,max:40}}}
+      }
+    ]
+  },
+  'Which cancellation stage drives the highest attrition?':{
+    text:"The <strong>Apheresis/Leukapheresis stage</strong> drives the highest absolute attrition: <strong>30 patients (12.1%)</strong> cancelled before or at apheresis. Top drivers: Insurance denial (41%), Disease progression (34%), Patient/physician withdrawal (25%). Post-manufacturing cancellations (7.6%) are lower but represent higher sunk cost per patient.",
+    followUps:['Which payers drive the most insurance-related cancellations?','Can we predict disease progression risk at registration?','What is the average sunk cost per post-manufacturing cancellation?'],
+    charts:[
+      {
+        id:'chat-stage-attrition',
+        title:'Cancellations by Funnel Stage',
+        type:'bar',
+        data:{
+          labels:['Reg → Apheresis','Apheresis → Mfg','Mfg → Infusion'],
+          datasets:[{label:'Patients Lost',data:[30,20,15],backgroundColor:['rgba(201,53,53,0.85)','rgba(192,123,0,0.8)','rgba(109,63,201,0.75)'],borderRadius:5}]
+        },
+        options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}},grid:{display:false}},y:{ticks:{font:{size:10}},grid:{color:'rgba(216,227,238,0.5)'}}}}
+      },
+      {
+        id:'chat-cancel-cost',
+        title:'Sunk Cost Exposure by Cancellation Stage (USD)',
+        type:'bar',
+        data:{
+          labels:['Pre-Apheresis','Post-Apheresis','Post-Manufacturing'],
+          datasets:[{label:'Avg Sunk Cost ($K)',data:[12,45,180],backgroundColor:['rgba(11,138,92,0.75)','rgba(192,123,0,0.8)','rgba(201,53,53,0.85)'],borderRadius:5}]
+        },
+        options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}},grid:{display:false}},y:{ticks:{font:{size:10},callback:v=>'$'+v+'K'},grid:{color:'rgba(216,227,238,0.5)'}}}}
+      }
+    ]
+  },
+  'Why is the South cancel rate highest?':{
+    text:"South region has the highest cancellation rate (<strong>30.2%</strong>) driven by: (1) Insurance denial rate 18% higher than national average; (2) Longest Reg-to-Aph wait times (avg 26d vs 22d nationally); (3) Disease progression during bridging therapy accounts for 34% of South cancellations vs 24% nationally.",
+    followUps:['Which South payers have the highest denial rates?','How does South TTT compare to East?','What intervention is most effective for South cancellations?'],
+    charts:[
+      {
+        id:'chat-region-cancel',
+        title:'Cancellation Rate by Region',
+        type:'bar',
+        data:{
+          labels:['East','West','North','South'],
+          datasets:[{label:'Cancel Rate %',data:[23.1,25.4,28.7,30.2],backgroundColor:['rgba(26,111,212,0.8)','rgba(109,63,201,0.8)','rgba(192,123,0,0.8)','rgba(201,53,53,0.85)'],borderRadius:5}]
+        },
+        options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}},grid:{display:false}},y:{ticks:{font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(216,227,238,0.5)'},min:0,max:40}}}
+      }
+    ]
+  },
+  'Which QTC has the worst Aph→Mfg TAT?':{
+    text:"<strong>EDM (Edmonton)</strong> QTC has the worst Apheresis-to-Manufacturing TAT at <strong>47.3 days</strong> — 12 days above the 35-day average. Root cause: suboptimal apheresis scheduling (8-day avg slot wait) and inconsistent cryopreservation packaging causing 2 re-processing events last quarter.",
+    followUps:['What actions have been taken at EDM previously?','How many patients are in EDM pipeline?','What is EDM slot availability forecast?'],
+    charts:[
+      {
+        id:'chat-qtc-tat',
+        title:'Aph→Mfg TAT by QTC (days)',
+        type:'bar',
+        data:{
+          labels:['EDM','HMR','CCM','SFO','NYC','CHI'],
+          datasets:[
+            {label:'Actual TAT (d)',data:[47.3,44.1,43.8,38.2,34.6,31.9],backgroundColor:d=>d.dataIndex===0?'rgba(201,53,53,0.85)':'rgba(26,111,212,0.7)',borderRadius:5},
+            {label:'Target (35d)',data:[35,35,35,35,35,35],type:'line',borderColor:'rgba(11,138,92,0.8)',borderDash:[4,3],borderWidth:1.5,pointRadius:0,fill:false}
+          ]
+        },
+        options:{plugins:{legend:{labels:{font:{size:10},boxWidth:10}}},scales:{x:{ticks:{font:{size:10}},grid:{display:false}},y:{ticks:{font:{size:10},callback:v=>v+'d'},grid:{color:'rgba(216,227,238,0.5)'},min:25,max:55}}}
+      }
+    ]
+  }
+};
+
+const DEFAULT_ANSWERS = [
+  "Based on the current analytics data, I can see several meaningful signals across your CAR-T funnel. Let me pull the relevant details for you.",
+  "Great question. Looking at the data for your selected time period and region filters, here's what the analytics show.",
+  "The model has processed 248 patient records for this period. Here's the insight relevant to your question."
+];
+
+// ── CHAT LOGIC ────────────────────────────────────
+function askQ(q){
+  addMessage(q,'user');
+  // show typing
+  const typingId='typing-'+Date.now();
+  const typingEl=document.createElement('div');
+  typingEl.className='typing-indicator'; typingEl.id=typingId;
+  typingEl.innerHTML='<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  document.getElementById('chat-messages').appendChild(typingEl);
+  scrollChat();
+  setTimeout(()=>{
+    const t=document.getElementById(typingId); if(t)t.remove();
+    const entry=CHAT_CHARTS[q];
+    const text=entry?entry.text:DEFAULT_ANSWERS[Math.floor(Math.random()*3)];
+    const fup=entry?entry.followUps:['Can you break this down by region?','What is the trend over the last 90 days?','What action do you recommend?'];
+    const charts=entry?entry.charts:null;
+    addMessage(text,'ai',fup,charts);
+  },900);
+}
+
+function addMessage(text,role,followUps,charts){
+  const msgs=document.getElementById('chat-messages');
+  const div=document.createElement('div');
+  div.className='msg '+role;
+  div.innerHTML=text;
+
+  if(charts && charts.length){
+    charts.forEach(cfg=>{
+      const wrap=document.createElement('div');
+      wrap.className='msg-chart-wrap';
+      const titleEl=document.createElement('div');
+      titleEl.className='msg-chart-title';
+      titleEl.textContent=cfg.title;
+      wrap.appendChild(titleEl);
+      const cvs=document.createElement('canvas');
+      const uid='msgchart-'+(++msgChartCount);
+      cvs.id=uid; cvs.height=150;
+      wrap.appendChild(cvs);
+      div.appendChild(wrap);
+      // defer chart creation until in DOM
+      requestAnimationFrame(()=>{
+        const bgColor=cfg.type==='bar'?
+          (cfg.data.datasets[0].backgroundColor instanceof Function
+            ? (ctx=>cfg.data.datasets[0].backgroundColor(ctx))
+            : cfg.data.datasets[0].backgroundColor)
+          : cfg.data.datasets[0].backgroundColor;
+        new Chart(cvs,{
+          type:cfg.type,
+          data:cfg.data,
+          options:{
+            responsive:true,
+            maintainAspectRatio:false,
+            animation:{duration:600},
+            ...cfg.options,
+            plugins:{
+              ...(cfg.options&&cfg.options.plugins||{}),
+              tooltip:{callbacks:{label:c=>{
+                const v=c.parsed.y??c.parsed;
+                return ` ${c.dataset.label||''}: ${typeof v==='number'?v:JSON.stringify(v)}`;
+              }}}
+            }
+          }
+        });
+      });
+    });
+  }
+
+  if(followUps){
+    const sq=document.createElement('div'); sq.className='suggested-qs';
+    followUps.forEach(q=>{
+      const b=document.createElement('button'); b.className='sugg-btn';
+      b.textContent=q; b.onclick=()=>askQ(q); sq.appendChild(b);
+    });
+    div.appendChild(sq);
+  }
+  msgs.appendChild(div);
+  scrollChat();
+}
+
+function scrollChat(){ const m=document.getElementById('chat-messages'); m.scrollTop=m.scrollHeight; }
+function sendChat(){
+  const inp=document.getElementById('chat-input'),q=inp.value.trim();
+  if(!q)return; inp.value=''; askQ(q);
+}
+function openChat(){document.getElementById('chat-overlay').classList.add('open');}
+function closeChat(){document.getElementById('chat-overlay').classList.remove('open');}
+
+// ── ALERTS / SUMMARY / SHARE ──────────────────────
+function openAlerts(){document.getElementById('alert-overlay').classList.add('open');}
+function closeAlerts(){document.getElementById('alert-overlay').classList.remove('open');}
+function saveAlert(){
+  closeAlerts();
+  toast('✓ Alert saved successfully','var(--green)');
+}
+function openSummary(){
+  const isExec=currentPersona==='exec';
+  document.getElementById('summary-content').innerHTML=isExec?`
+    <div class="summary-title">Executive Summary — CAR-T Patient Journey</div>
+    <div class="summary-sub">David Chen · VP Commercial · ${new Date().toLocaleString()}</div>
+    <div class="summary-kpis">
+      <div class="sum-kpi"><div class="val" style="color:var(--cyan)">248</div><div class="lbl">Total Registrations</div></div>
+      <div class="sum-kpi"><div class="val" style="color:var(--green)">183</div><div class="lbl">Infusions Completed</div></div>
+      <div class="sum-kpi"><div class="val" style="color:var(--amber)">63d</div><div class="lbl">Avg Time-to-Treat</div></div>
+    </div>
+    <div class="summary-section"><h4>Performance Highlights</h4><p>CAR-T infusions tracking 9% above target for H2 2025. Yescarta holds 52% market share nationally, though West region share softened 3pp over 60 days.</p></div>
+    <div class="summary-section"><h4>Critical Risks</h4><p>South region cancellation rate at 30.2% — 4pp above national average. East slot capacity forecast to be exceeded by 18% in 6 weeks.</p></div>
+    <div class="summary-section"><h4>Recommended Decisions</h4><p>1. Deploy 2 patient navigators to South QTCs. 2. Escalate East slot allocation. 3. Authorize KAM re-engagement — 2 West physicians.</p></div>
+    <div class="modal-btns"><button class="modal-cancel" onclick="closeSummary()">Close</button><button class="btn btn-primary">Export PDF</button></div>
+  `:`
+    <div class="summary-title">CAR-T Analyst Operations Summary</div>
+    <div class="summary-sub">Anna Müller · CAR-T Analyst · ${new Date().toLocaleString()}</div>
+    <div class="summary-kpis">
+      <div class="sum-kpi"><div class="val" style="color:var(--cyan)">41</div><div class="lbl">Active Registrations</div></div>
+      <div class="sum-kpi"><div class="val" style="color:var(--orange)">23</div><div class="lbl">In Manufacturing</div></div>
+      <div class="sum-kpi"><div class="val" style="color:var(--green)">34.2d</div><div class="lbl">Avg Mfg TAT</div></div>
+    </div>
+    <div class="summary-section"><h4>Operational Status</h4><p>Manufacturing TAT 0.8 days under target. 2 batches on QC hold represent downstream infusion risk if not resolved within 48 hours.</p></div>
+    <div class="summary-section"><h4>Immediate Risks</h4><p>North logistics disruption threatens 4 deliveries in 72h. 3 South QTCs have REMS submissions due Feb 15 — 12 days remaining.</p></div>
+    <div class="summary-section"><h4>Actions This Week</h4><p>1. Authorize North rerouting (CP-07) — 6 hours. 2. Escalate QC Lot #1182. 3. REMS coordinator to South sites before Feb 10.</p></div>
+    <div class="modal-btns"><button class="modal-cancel" onclick="closeSummary()">Close</button><button class="btn btn-primary">Export PDF</button></div>
+  `;
+  document.getElementById('summary-overlay').classList.add('open');
+}
+function closeSummary(){document.getElementById('summary-overlay').classList.remove('open');}
+function shareAction(){
+  if(navigator.clipboard)navigator.clipboard.writeText(window.location.href);
+  toast('↗ Dashboard link copied to clipboard','var(--cyan)');
+}
+function toast(msg,color){
+  const b=document.createElement('div');
+  b.style.cssText=`position:fixed;top:70px;right:20px;background:#fff;border:1px solid ${color};color:${color};padding:12px 18px;border-radius:8px;font-size:12px;z-index:999;font-family:var(--font);box-shadow:0 4px 16px rgba(26,40,64,0.12)`;
+  b.textContent=msg; document.body.appendChild(b); setTimeout(()=>b.remove(),3000);
+}
+
+// ── TIME ──────────────────────────────────────────
+function updateTime(){document.getElementById('refresh-time').textContent=new Date().toLocaleTimeString();}
+setInterval(updateTime,1000); updateTime();
+function updateDashboard(){init();}
+
+// ── INIT ──────────────────────────────────────────
+function init(){
+  buildFunnel('funnel-exec',DATA.exec.funnel);
+  buildFunnel('funnel-hq',DATA.hq.funnel);
+  buildTAT('tat-exec',DATA.exec.tat);
+  buildTAT('tat-hq',DATA.hq.tat);
+  buildGrid('grid-exec',DATA.exec.grid);
+  buildGrid('grid-hq',DATA.hq.grid);
+  buildRegionChart('regionChart-exec',DATA.exec.regional);
+  buildRegionChart('regionChart-hq',DATA.hq.regional);
+}
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
